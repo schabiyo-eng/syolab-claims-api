@@ -254,6 +254,32 @@ class ClaimApiTest {
   }
 
   @Test
+  void acceptsJsonPostFromLoopbackDesk() throws Exception {
+    var response =
+        mockMvc
+            .perform(
+                post("/api/claims")
+                    .header("Origin", "http://127.0.0.1:5173")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        claimJson(
+                            "POL-1002",
+                            "\"100.00\"",
+                            "2026-06-01",
+                            "Follow up visit",
+                            "medical-bill")))
+            .andReturn()
+            .getResponse();
+
+    assertThat(response.getStatus()).isEqualTo(201);
+    assertThat(response.getHeader("Access-Control-Allow-Origin"))
+        .isEqualTo("http://127.0.0.1:5173");
+    assertThat(response.getContentAsString()).doesNotContain("Invalid CORS request");
+    JsonNode created = objectMapper.readTree(response.getContentAsString());
+    assertThat(created.get("status").asText()).isEqualTo("ACCEPTED");
+  }
+
+  @Test
   void publishesInteractiveDocs() throws Exception {
     mockMvc.perform(get("/v3/api-docs")).andExpect(status().isOk());
   }
