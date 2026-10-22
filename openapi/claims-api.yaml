@@ -1,0 +1,241 @@
+openapi: 3.0.3
+info:
+  title: Syolab Claims API
+  version: 1.0.0
+  description: Claims intake API for the Syolab insurance demo. Money amounts are decimal strings.
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/policies:
+    get:
+      operationId: listPolicies
+      summary: List policies
+      responses:
+        "200":
+          description: Policies in stable policy-number order
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Policy"
+  /api/policies/{policyNumber}:
+    get:
+      operationId: getPolicy
+      summary: Get one policy
+      parameters:
+        - $ref: "#/components/parameters/PolicyNumber"
+      responses:
+        "200":
+          description: The policy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/claims:
+    get:
+      operationId: listClaims
+      summary: List claims newest first
+      responses:
+        "200":
+          description: Claims ordered by createdAt descending
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Claim"
+    post:
+      operationId: createClaim
+      summary: Submit a claim and run validation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateClaimRequest"
+      responses:
+        "201":
+          description: Claim stored, including rejected and flagged claims
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/claims/{id}:
+    get:
+      operationId: getClaim
+      summary: Get one claim
+      parameters:
+        - $ref: "#/components/parameters/ClaimId"
+      responses:
+        "200":
+          description: The claim
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+        "404":
+          $ref: "#/components/responses/NotFound"
+components:
+  parameters:
+    PolicyNumber:
+      name: policyNumber
+      in: path
+      required: true
+      schema:
+        type: string
+    ClaimId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorMessage"
+    BadRequest:
+      description: Malformed claim
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorMessage"
+  schemas:
+    Policy:
+      type: object
+      additionalProperties: false
+      required:
+        - policyNumber
+        - holderName
+        - status
+        - coverageLimit
+        - effectiveDate
+        - expirationDate
+        - requiredDocuments
+      properties:
+        policyNumber:
+          type: string
+          example: POL-1001
+        holderName:
+          type: string
+        status:
+          type: string
+          enum: [ACTIVE, EXPIRED, CANCELLED]
+        coverageLimit:
+          type: string
+          description: Decimal dollars with two fraction digits, such as 10000.00
+          example: "10000.00"
+        effectiveDate:
+          type: string
+          format: date
+        expirationDate:
+          type: string
+          format: date
+        requiredDocuments:
+          type: array
+          items:
+            type: string
+    CreateClaimRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - policyNumber
+        - claimantName
+        - amount
+        - incidentDate
+        - description
+        - documentNames
+      properties:
+        policyNumber:
+          type: string
+        claimantName:
+          type: string
+        amount:
+          type: string
+          description: Decimal dollars. More than two fraction digits is a 400.
+          example: "250.00"
+        incidentDate:
+          type: string
+          format: date
+        description:
+          type: string
+        documentNames:
+          type: array
+          items:
+            type: string
+    Claim:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - policyNumber
+        - claimantName
+        - amount
+        - incidentDate
+        - description
+        - documentNames
+        - status
+        - findings
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        policyNumber:
+          type: string
+        claimantName:
+          type: string
+        amount:
+          type: string
+        incidentDate:
+          type: string
+          format: date
+        description:
+          type: string
+        documentNames:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [ACCEPTED, FLAGGED, REJECTED]
+        findings:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidationFinding"
+        createdAt:
+          type: string
+          format: date-time
+    ValidationFinding:
+      type: object
+      additionalProperties: false
+      required: [code, severity, message]
+      properties:
+        code:
+          type: string
+          enum:
+            - POLICY_NOT_FOUND
+            - POLICY_INACTIVE
+            - EXCEEDS_COVERAGE
+            - MISSING_DOCUMENTS
+            - POSSIBLE_FRAUD
+        severity:
+          type: string
+          enum: [ERROR, WARNING]
+        message:
+          type: string
+    ErrorMessage:
+      type: object
+      additionalProperties: false
+      required: [message]
+      properties:
+        message:
+          type: string

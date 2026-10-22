@@ -1,0 +1,10 @@
+---
+description: Claims API contract, money, and coverage tests
+alwaysApply: true
+---
+
+Money is `BigDecimal`. JSON amounts are decimal strings stored at scale 2. `openapi/claims-api.yaml` is the contract.
+
+Do not weaken or delete `acceptsClaimExactlyAtCoverageLimit` or `rejectsWhenOpenClaimsTogetherExceedTheCoverageLimit`. The check is `./mvnw -B test`, the same command CI and the stop hook run.
+
+Definition of done: that suite passes, README run steps work from a clean checkout, and copy stays customer-safe.
