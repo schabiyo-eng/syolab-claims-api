@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "hooks": {
+    "afterFileEdit": [
+      {
+        "command": ".cursor/hooks/after-file-edit.py",
+        "timeout": 60
+      }
+    ],
+    "stop": [
+      {
+        "command": ".cursor/hooks/stop.py",
+        "timeout": 900,
+        "loop_limit": 3
+      }
+    ]
+  }
+}
