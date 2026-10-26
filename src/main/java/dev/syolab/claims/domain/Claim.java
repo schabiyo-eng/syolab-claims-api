@@ -16,6 +16,7 @@ public record Claim(
     List<String> documentNames,
     ClaimStatus status,
     List<ValidationFinding> findings,
+    BigDecimal payout,
     Instant createdAt) {
 
   public Claim {

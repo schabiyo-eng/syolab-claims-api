@@ -1,7 +1,9 @@
 package dev.syolab.claims.service;
 
 import dev.syolab.claims.domain.Claim;
+import dev.syolab.claims.domain.ClaimStatus;
 import dev.syolab.claims.domain.Policy;
+import dev.syolab.claims.domain.ProductLine;
 import dev.syolab.claims.rules.Assessment;
 import dev.syolab.claims.rules.ClaimDraft;
 import dev.syolab.claims.rules.ClaimRuleEngine;
@@ -9,6 +11,7 @@ import dev.syolab.claims.store.ClaimRepository;
 import dev.syolab.claims.store.PolicyRepository;
 import dev.syolab.claims.web.CreateClaimRequest;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -53,6 +56,12 @@ public class ClaimService {
               request.description().trim(),
               request.documentNames());
       Assessment assessment = engine.evaluate(policy, open, draft, LocalDate.now(clock));
+      BigDecimal payout = null;
+      if (assessment.status() == ClaimStatus.ACCEPTED) {
+        BigDecimal consumed =
+            open.stream().map(Claim::amount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        payout = calculatePayout(policy, draft.amount(), policy.coverageLimit().subtract(consumed));
+      }
       Claim claim =
           new Claim(
               id,
@@ -64,10 +73,26 @@ public class ClaimService {
               draft.documentNames(),
               assessment.status(),
               assessment.findings(),
+              payout,
               createdAt == null ? Instant.now(clock) : createdAt);
       claims.save(claim);
       return claim;
     }
+  }
+
+  public BigDecimal calculatePayout(
+      Policy policy, BigDecimal claimedAmount, BigDecimal remainingCoverage) {
+    BigDecimal available = remainingCoverage.max(BigDecimal.ZERO);
+    if (policy.productLine() == ProductLine.AUTO) {
+      return claimedAmount
+          .min(available)
+          .subtract(policy.deductible())
+          .max(BigDecimal.ZERO)
+          .setScale(2, RoundingMode.HALF_EVEN);
+    }
+    BigDecimal net = claimedAmount.subtract(policy.deductible()).max(BigDecimal.ZERO);
+    BigDecimal coveredShare = net.divide(claimedAmount, 0, RoundingMode.DOWN);
+    return claimedAmount.min(available).multiply(coveredShare).setScale(2, RoundingMode.DOWN);
   }
 
   public Claim get(UUID id) {

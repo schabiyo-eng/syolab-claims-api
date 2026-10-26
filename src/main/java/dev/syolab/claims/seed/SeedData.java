@@ -2,6 +2,7 @@ package dev.syolab.claims.seed;
 
 import dev.syolab.claims.domain.Policy;
 import dev.syolab.claims.domain.PolicyStatus;
+import dev.syolab.claims.domain.ProductLine;
 import dev.syolab.claims.service.ClaimService;
 import dev.syolab.claims.store.ClaimRepository;
 import dev.syolab.claims.store.PolicyRepository;
@@ -47,7 +48,9 @@ public class SeedData implements ApplicationRunner {
             "POL-1001",
             "Amira Shah",
             PolicyStatus.ACTIVE,
+            ProductLine.AUTO,
             "10000.00",
+            "250.00",
             "2025-01-01",
             "2027-12-31",
             List.of("police-report", "repair-estimate")));
@@ -56,7 +59,9 @@ public class SeedData implements ApplicationRunner {
             "POL-1002",
             "Luis Ortega",
             PolicyStatus.ACTIVE,
+            ProductLine.TRAVEL,
             "50000.00",
+            "0.00",
             "2025-01-01",
             "2027-12-31",
             List.of("medical-bill")));
@@ -65,7 +70,9 @@ public class SeedData implements ApplicationRunner {
             "POL-1003",
             "Nora Blake",
             PolicyStatus.EXPIRED,
+            ProductLine.AUTO,
             "20000.00",
+            "250.00",
             "2023-01-01",
             "2024-12-31",
             List.of("police-report")));
@@ -74,10 +81,23 @@ public class SeedData implements ApplicationRunner {
             "POL-1004",
             "Chris Dalton",
             PolicyStatus.ACTIVE,
+            ProductLine.AUTO,
             "10000.00",
+            "500.00",
             "2025-01-01",
             "2027-12-31",
             List.of("police-report")));
+    policies.save(
+        policy(
+            "POL-1005",
+            "Grace Okafor",
+            PolicyStatus.ACTIVE,
+            ProductLine.HOME,
+            "15000.00",
+            "500.00",
+            "2025-01-01",
+            "2027-12-31",
+            List.of("contractor-estimate")));
 
     store(
         "c5555555-5555-4555-8555-555555555555",
@@ -116,6 +136,15 @@ public class SeedData implements ApplicationRunner {
         List.of(),
         "2026-04-02T15:00:00Z");
     store(
+        "c6666666-6666-4666-8666-666666666666",
+        "POL-1005",
+        "Grace Okafor",
+        "1250.00",
+        "2026-04-18",
+        "Kitchen pipe leak",
+        List.of("contractor-estimate"),
+        "2026-04-18T15:00:00Z");
+    store(
         "c4444444-4444-4444-8444-444444444444",
         "POL-1003",
         "Nora Blake",
@@ -130,7 +159,9 @@ public class SeedData implements ApplicationRunner {
       String number,
       String holder,
       PolicyStatus status,
+      ProductLine productLine,
       String limit,
+      String deductible,
       String effective,
       String expiration,
       List<String> documents) {
@@ -138,7 +169,9 @@ public class SeedData implements ApplicationRunner {
         number,
         holder,
         status,
+        productLine,
         new BigDecimal(limit),
+        new BigDecimal(deductible),
         LocalDate.parse(effective),
         LocalDate.parse(expiration),
         documents);

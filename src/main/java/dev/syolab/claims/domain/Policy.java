@@ -8,7 +8,9 @@ public record Policy(
     String policyNumber,
     String holderName,
     PolicyStatus status,
+    ProductLine productLine,
     BigDecimal coverageLimit,
+    BigDecimal deductible,
     LocalDate effectiveDate,
     LocalDate expirationDate,
     List<String> requiredDocuments) {

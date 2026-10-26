@@ -211,6 +211,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ValidationFinding"
+        payout:
+          type: string
+          nullable: true
+          description: Decimal dollars payable on an ACCEPTED claim, such as 750.00. Null for other statuses.
+          example: "750.00"
         createdAt:
           type: string
           format: date-time

@@ -19,6 +19,7 @@
 
   <properties>
     <java.version>17</java.version>
+    <payout.excludedGroups>payout-regression</payout.excludedGroups>
   </properties>
 
   <dependencies>
@@ -48,6 +49,27 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <excludedGroups>${payout.excludedGroups}</excludedGroups>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>selected-groups</id>
+      <activation>
+        <property>
+          <name>groups</name>
+        </property>
+      </activation>
+      <properties>
+        <payout.excludedGroups></payout.excludedGroups>
+      </properties>
+    </profile>
+  </profiles>
 </project>

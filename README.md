@@ -24,6 +24,12 @@ API base URL: `http://localhost:8080`
 ./mvnw -B test
 ```
 
+Tests tagged `payout-regression` are excluded from that default run. Run them on their own with:
+
+```bash
+./mvnw -B test -Dgroups=payout-regression
+```
+
 ## Demo
 
 `DEMO.md` is the presenter guide. The ticket in `docs/demo-tickets/flag-claims-over-policy-limit.md` is intentionally not implemented. That file is the live exercise.

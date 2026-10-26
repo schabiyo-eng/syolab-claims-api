@@ -7,6 +7,7 @@ import dev.syolab.claims.domain.ClaimStatus;
 import dev.syolab.claims.domain.FindingCode;
 import dev.syolab.claims.domain.Policy;
 import dev.syolab.claims.domain.PolicyStatus;
+import dev.syolab.claims.domain.ProductLine;
 import dev.syolab.claims.domain.Severity;
 import dev.syolab.claims.domain.ValidationFinding;
 import java.math.BigDecimal;
@@ -73,7 +74,9 @@ class ClaimRuleEngineTest {
             "POL-OLD",
             "Nora Blake",
             PolicyStatus.EXPIRED,
+            ProductLine.AUTO,
             new BigDecimal("20000.00"),
+            BigDecimal.ZERO,
             LocalDate.parse("2025-01-01"),
             LocalDate.parse("2027-12-31"),
             List.of("police-report"));
@@ -111,7 +114,9 @@ class ClaimRuleEngineTest {
             "POL-OLD",
             "Nora Blake",
             PolicyStatus.EXPIRED,
+            ProductLine.AUTO,
             new BigDecimal("100.00"),
+            BigDecimal.ZERO,
             LocalDate.parse("2023-01-01"),
             LocalDate.parse("2024-12-31"),
             List.of("police-report"));
@@ -227,6 +232,7 @@ class ClaimRuleEngineTest {
             List.of("police-report"),
             ClaimStatus.ACCEPTED,
             List.of(),
+            null,
             Instant.parse("2026-02-01T15:00:00Z"));
     Assessment result =
         engine.evaluate(
@@ -245,7 +251,9 @@ class ClaimRuleEngineTest {
         "POL-FRESH",
         "Test Holder",
         PolicyStatus.ACTIVE,
+        ProductLine.AUTO,
         new BigDecimal(limit),
+        BigDecimal.ZERO,
         LocalDate.parse("2025-01-01"),
         LocalDate.parse("2027-12-31"),
         required);

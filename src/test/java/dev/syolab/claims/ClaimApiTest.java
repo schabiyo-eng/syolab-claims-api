@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.syolab.claims.domain.Policy;
 import dev.syolab.claims.domain.PolicyStatus;
+import dev.syolab.claims.domain.ProductLine;
 import dev.syolab.claims.seed.SeedData;
 import dev.syolab.claims.store.PolicyRepository;
 import java.math.BigDecimal;
@@ -42,7 +43,7 @@ class ClaimApiTest {
   void listsPoliciesInPolicyNumberOrder() throws Exception {
     JsonNode body = getJson("/api/policies");
 
-    assertThat(body).hasSize(4);
+    assertThat(body).hasSize(5);
     assertThat(body.get(0).get("policyNumber").asText()).isEqualTo("POL-1001");
     assertThat(body.get(0).get("holderName").asText()).isEqualTo("Amira Shah");
     assertThat(body.get(0).get("status").asText()).isEqualTo("ACTIVE");
@@ -53,6 +54,7 @@ class ClaimApiTest {
     assertThat(body.get(2).get("holderName").asText()).isEqualTo("Nora Blake");
     assertThat(body.get(2).get("status").asText()).isEqualTo("EXPIRED");
     assertThat(body.get(3).get("policyNumber").asText()).isEqualTo("POL-1004");
+    assertThat(body.get(4).get("policyNumber").asText()).isEqualTo("POL-1005");
   }
 
   @Test
@@ -73,15 +75,17 @@ class ClaimApiTest {
   void listsClaimsNewestFirstAndKeepsTheSeededDesk() throws Exception {
     JsonNode claims = getJson("/api/claims");
 
-    assertThat(claims).hasSize(5);
+    assertThat(claims).hasSize(6);
     assertThat(claims.get(0).get("id").asText()).isEqualTo("c4444444-4444-4444-8444-444444444444");
     assertThat(claims.get(0).get("status").asText()).isEqualTo("REJECTED");
     assertThat(codes(claims.get(0))).contains("POLICY_INACTIVE");
+    assertThat(claims.get(0).get("payout").isNull()).isTrue();
 
     JsonNode chris = findClaimant(claims, "Chris Dalton");
     assertThat(chris.get("status").asText()).isEqualTo("ACCEPTED");
     assertThat(chris.get("amount").asText()).isEqualTo("10000.00");
     assertThat(chris.get("policyNumber").asText()).isEqualTo("POL-1004");
+    assertThat(chris.get("payout").asText()).isEqualTo("9500.00");
 
     BigDecimal amira = BigDecimal.ZERO;
     for (JsonNode claim : claims) {
@@ -95,6 +99,7 @@ class ClaimApiTest {
     JsonNode luis = findClaimant(claims, "Luis Ortega");
     assertThat(luis.get("status").asText()).isEqualTo("FLAGGED");
     assertThat(codes(luis)).contains("MISSING_DOCUMENTS");
+    assertThat(luis.get("payout").isNull()).isTrue();
   }
 
   @Test
@@ -104,6 +109,7 @@ class ClaimApiTest {
     assertThat(claim.get("claimantName").asText()).isEqualTo("Amira Shah");
     assertThat(claim.get("amount").asText()).isEqualTo("4000.00");
     assertThat(claim.get("status").asText()).isEqualTo("ACCEPTED");
+    assertThat(claim.get("payout").asText()).isEqualTo("3750.00");
     assertThat(claim.get("createdAt").asText()).isEqualTo("2026-03-12T15:00:00Z");
   }
 
@@ -291,7 +297,9 @@ class ClaimApiTest {
             number,
             "Test Holder",
             PolicyStatus.ACTIVE,
+            ProductLine.AUTO,
             new BigDecimal(limit),
+            BigDecimal.ZERO,
             LocalDate.parse("2025-01-01"),
             LocalDate.parse("2027-12-31"),
             required));

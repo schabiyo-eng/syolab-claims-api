@@ -18,6 +18,7 @@ public record ClaimResponse(
     List<String> documentNames,
     ClaimStatus status,
     List<ValidationFinding> findings,
+    String payout,
     Instant createdAt) {
 
   public static ClaimResponse from(Claim claim) {
@@ -31,6 +32,7 @@ public record ClaimResponse(
         claim.documentNames(),
         claim.status(),
         claim.findings(),
+        claim.payout() == null ? null : MoneyParser.format(claim.payout()),
         claim.createdAt());
   }
 }
