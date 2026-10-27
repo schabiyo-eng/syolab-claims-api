@@ -51,6 +51,12 @@ class ClaimPayoutTest {
     assertThat(result.toPlainString()).isEqualTo("1250.00");
   }
 
+  @Test
+  void homeAndTravelPayClaimedAmountLessDeductibleLikeAuto() {
+    assertThat(payout(ProductLine.HOME, "1250.00", "500.00", "15000.00")).isEqualTo("750.00");
+    assertThat(payout(ProductLine.TRAVEL, "1250.00", "500.00", "15000.00")).isEqualTo("750.00");
+  }
+
   private String payout(
       ProductLine line, String claimed, String deductible, String remainingCoverage) {
     return service

@@ -28,4 +28,26 @@ class HomePayoutRegressionTest {
 
     assertThat(result.toPlainString()).isEqualTo("750.00");
   }
+
+  @Test
+  void homeCapsAtRemainingCoverageBeforeTheDeductible() {
+    BigDecimal result =
+        service.calculatePayout(
+            ClaimPayoutTest.policy(ProductLine.HOME, "500.00"),
+            new BigDecimal("1250.00"),
+            new BigDecimal("900.00"));
+
+    assertThat(result.toPlainString()).isEqualTo("400.00");
+  }
+
+  @Test
+  void homeFloorsAtZeroWhenTheClaimIsBelowTheDeductible() {
+    BigDecimal result =
+        service.calculatePayout(
+            ClaimPayoutTest.policy(ProductLine.HOME, "500.00"),
+            new BigDecimal("300.00"),
+            new BigDecimal("15000.00"));
+
+    assertThat(result.toPlainString()).isEqualTo("0.00");
+  }
 }
