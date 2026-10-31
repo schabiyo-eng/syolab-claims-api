@@ -238,22 +238,23 @@ class AuthApiTest {
 
   @Test
   void everyClaimantIsASeededHolder() throws Exception {
-    MockHttpServletResponse response =
-        mockMvc
-            .perform(
-                get("/api/policies")
-                    .header(HttpHeaders.AUTHORIZATION, Logins.bearer(mockMvc, Role.ADJUSTER)))
-            .andReturn()
-            .getResponse();
-    JsonNode policies = objectMapper.readTree(response.getContentAsString());
-
     for (DemoUsers.DemoUser user : DemoUsers.ALL) {
       if (user.role() != Role.CLAIMANT) {
         continue;
       }
-      JsonNode policy = findPolicy(policies, user.policyNumber());
-      assertThat(policy).isNotNull();
-      assertThat(policy.get("holderName").asText()).isEqualTo(user.displayName());
+      MockHttpServletResponse response =
+          mockMvc
+              .perform(
+                  get("/api/policies")
+                      .header(HttpHeaders.AUTHORIZATION, Logins.bearer(mockMvc, user.username())))
+              .andReturn()
+              .getResponse();
+      assertThat(response.getStatus()).isEqualTo(200);
+      JsonNode policies = objectMapper.readTree(response.getContentAsString());
+      assertThat(policies).isNotEmpty();
+      for (JsonNode policy : policies) {
+        assertThat(policy.get("holderName").asText()).isEqualTo(user.displayName());
+      }
     }
   }
 
@@ -264,15 +265,6 @@ class AuthApiTest {
       assertThat(readme).contains(user.username());
       assertThat(readme).contains(user.password());
     }
-  }
-
-  private JsonNode findPolicy(JsonNode policies, String policyNumber) {
-    for (JsonNode policy : policies) {
-      if (policyNumber.equals(policy.get("policyNumber").asText())) {
-        return policy;
-      }
-    }
-    return null;
   }
 
   private void assertOneFieldError(MockHttpServletResponse response, int expectedStatus)

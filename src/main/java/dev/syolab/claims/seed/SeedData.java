@@ -1,5 +1,7 @@
 package dev.syolab.claims.seed;
 
+import dev.syolab.claims.auth.Caller;
+import dev.syolab.claims.auth.Role;
 import dev.syolab.claims.domain.Policy;
 import dev.syolab.claims.domain.PolicyStatus;
 import dev.syolab.claims.domain.ProductLine;
@@ -18,6 +20,8 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class SeedData implements ApplicationRunner {
+
+  private static final Caller DESK = new Caller("seed", Role.ADJUSTER);
 
   private final PolicyRepository policies;
   private final ClaimRepository claims;
@@ -194,6 +198,7 @@ public class SeedData implements ApplicationRunner {
       List<String> documents,
       String createdAt) {
     claimService.submit(
+        DESK,
         new CreateClaimRequest(
             policyNumber, claimant, amount, LocalDate.parse(incidentDate), description, documents),
         UUID.fromString(id),

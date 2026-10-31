@@ -1,5 +1,6 @@
 package dev.syolab.claims.service;
 
+import dev.syolab.claims.auth.Caller;
 import dev.syolab.claims.domain.Claim;
 import dev.syolab.claims.domain.ClaimStatus;
 import dev.syolab.claims.domain.Policy;
@@ -36,15 +37,19 @@ public class ClaimService {
     this.clock = clock;
   }
 
-  public Claim submit(CreateClaimRequest request) {
-    return submit(request, UUID.randomUUID(), null);
+  public Claim submit(Caller caller, CreateClaimRequest request) {
+    return submit(caller, request, UUID.randomUUID(), null);
   }
 
-  public Claim submit(CreateClaimRequest request, UUID id, Instant createdAt) {
+  public Claim submit(Caller caller, CreateClaimRequest request, UUID id, Instant createdAt) {
     synchronized (claims) {
       validateShape(request);
       BigDecimal amount = MoneyParser.parse(request.amount());
-      Policy policy = policies.findByNumber(request.policyNumber()).orElse(null);
+      Policy policyForScope = policies.findByNumber(request.policyNumber()).orElse(null);
+      if (!caller.canSee(policyForScope)) {
+        throw new NotFoundException("Policy not found.");
+      }
+      Policy policy = policyForScope;
       List<Claim> open =
           policy == null ? List.of() : claims.findConsumingCoverage(policy.policyNumber());
       ClaimDraft draft =
@@ -95,12 +100,19 @@ public class ClaimService {
     return claimedAmount.min(available).multiply(coveredShare).setScale(2, RoundingMode.DOWN);
   }
 
-  public Claim get(UUID id) {
-    return claims.findById(id).orElseThrow(() -> new NotFoundException("Claim not found."));
+  public Claim get(Caller caller, UUID id) {
+    return claims
+        .findById(id)
+        .filter(claim -> visible(caller, claim))
+        .orElseThrow(() -> new NotFoundException("Claim not found."));
   }
 
-  public List<Claim> listNewestFirst() {
-    return claims.findAllNewestFirst();
+  public List<Claim> listNewestFirst(Caller caller) {
+    return claims.findAllNewestFirst().stream().filter(claim -> visible(caller, claim)).toList();
+  }
+
+  private boolean visible(Caller caller, Claim claim) {
+    return caller.canSee(policies.findByNumber(claim.policyNumber()).orElse(null));
   }
 
   private static void validateShape(CreateClaimRequest request) {
