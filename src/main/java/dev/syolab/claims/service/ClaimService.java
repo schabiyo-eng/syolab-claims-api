@@ -4,6 +4,8 @@ import dev.syolab.claims.auth.Caller;
 import dev.syolab.claims.domain.Claim;
 import dev.syolab.claims.domain.ClaimFile;
 import dev.syolab.claims.domain.ClaimStatus;
+import dev.syolab.claims.domain.Decision;
+import dev.syolab.claims.domain.DecisionChange;
 import dev.syolab.claims.domain.Policy;
 import dev.syolab.claims.domain.ProductLine;
 import dev.syolab.claims.rules.Assessment;
@@ -13,6 +15,7 @@ import dev.syolab.claims.store.ActivityLog;
 import dev.syolab.claims.store.ClaimRepository;
 import dev.syolab.claims.store.PolicyRepository;
 import dev.syolab.claims.web.CreateClaimRequest;
+import dev.syolab.claims.web.DecisionRequest;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
@@ -117,6 +120,51 @@ public class ClaimService {
         .filter(claim -> visible(caller, claim))
         .map(claim -> new ClaimFile(claim, activity.history(claim.id())))
         .toList();
+  }
+
+  public ClaimFile decide(Caller caller, UUID id, DecisionRequest request) {
+    Decision to = requestedDecision(request);
+    String note = requiredNote(request, to);
+    Claim claim = visibleClaim(caller, id);
+    synchronized (activity) {
+      Decision from = Decision.current(activity.history(id));
+      if (from.isFinal()) {
+        throw new ConflictException("This claim already has a final decision.");
+      }
+      activity.append(
+          new DecisionChange(
+              id, Instant.now(clock), caller.username(), caller.role(), from, to, note));
+      return new ClaimFile(claim, activity.history(id));
+    }
+  }
+
+  private static Decision requestedDecision(DecisionRequest request) {
+    if (request.decision() == null) {
+      throw new BadRequestException("Decision must be APPROVED, DENIED, or INFO_REQUESTED.");
+    }
+    try {
+      Decision parsed = Decision.valueOf(request.decision());
+      if (parsed == Decision.PENDING) {
+        throw new BadRequestException("Decision must be APPROVED, DENIED, or INFO_REQUESTED.");
+      }
+      return parsed;
+    } catch (IllegalArgumentException exception) {
+      throw new BadRequestException("Decision must be APPROVED, DENIED, or INFO_REQUESTED.");
+    }
+  }
+
+  private static String requiredNote(DecisionRequest request, Decision to) {
+    if (to.needsNote()) {
+      if (request.note() == null || request.note().isBlank()) {
+        throw new BadRequestException(
+            "A note is required to deny a claim or request more information.");
+      }
+      return request.note().trim();
+    }
+    if (request.note() == null || request.note().isBlank()) {
+      return null;
+    }
+    return request.note().trim();
   }
 
   private Claim visibleClaim(Caller caller, UUID id) {

@@ -43,6 +43,15 @@ public class ClaimController {
     return ClaimResponse.from(ClaimFile.submitted(claims.submit(Caller.from(jwt), request)));
   }
 
+  @PostMapping("/{id}/decision")
+  @Operation(operationId = "decideClaim", summary = "Record an adjuster decision on a claim")
+  public ClaimResponse decide(
+      @AuthenticationPrincipal Jwt jwt,
+      @PathVariable String id,
+      @RequestBody DecisionRequest request) {
+    return ClaimResponse.from(claims.decide(Caller.from(jwt), parseId(id), request));
+  }
+
   @GetMapping("/{id}")
   @Operation(operationId = "getClaim", summary = "Get one claim")
   public ResponseEntity<ClaimResponse> get(
