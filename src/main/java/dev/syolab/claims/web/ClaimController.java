@@ -52,6 +52,24 @@ public class ClaimController {
     return ClaimResponse.from(claims.decide(Caller.from(jwt), parseId(id), request));
   }
 
+  @GetMapping("/{id}/comments")
+  @Operation(operationId = "listComments", summary = "List comments on a claim")
+  public List<CommentResponse> comments(@AuthenticationPrincipal Jwt jwt, @PathVariable String id) {
+    return claims.comments(Caller.from(jwt), parseId(id)).stream()
+        .map(CommentResponse::from)
+        .toList();
+  }
+
+  @PostMapping("/{id}/comments")
+  @ResponseStatus(HttpStatus.CREATED)
+  @Operation(operationId = "createComment", summary = "Add a comment on a claim")
+  public CommentResponse comment(
+      @AuthenticationPrincipal Jwt jwt,
+      @PathVariable String id,
+      @RequestBody CommentRequest request) {
+    return CommentResponse.from(claims.comment(Caller.from(jwt), parseId(id), request));
+  }
+
   @GetMapping("/{id}")
   @Operation(operationId = "getClaim", summary = "Get one claim")
   public ResponseEntity<ClaimResponse> get(

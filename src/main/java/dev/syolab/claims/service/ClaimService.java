@@ -1,9 +1,11 @@
 package dev.syolab.claims.service;
 
 import dev.syolab.claims.auth.Caller;
+import dev.syolab.claims.domain.Activity;
 import dev.syolab.claims.domain.Claim;
 import dev.syolab.claims.domain.ClaimFile;
 import dev.syolab.claims.domain.ClaimStatus;
+import dev.syolab.claims.domain.Comment;
 import dev.syolab.claims.domain.Decision;
 import dev.syolab.claims.domain.DecisionChange;
 import dev.syolab.claims.domain.Policy;
@@ -14,6 +16,7 @@ import dev.syolab.claims.rules.ClaimRuleEngine;
 import dev.syolab.claims.store.ActivityLog;
 import dev.syolab.claims.store.ClaimRepository;
 import dev.syolab.claims.store.PolicyRepository;
+import dev.syolab.claims.web.CommentRequest;
 import dev.syolab.claims.web.CreateClaimRequest;
 import dev.syolab.claims.web.DecisionRequest;
 import java.math.BigDecimal;
@@ -120,6 +123,34 @@ public class ClaimService {
         .filter(claim -> visible(caller, claim))
         .map(claim -> new ClaimFile(claim, activity.history(claim.id())))
         .toList();
+  }
+
+  public List<Comment> comments(Caller caller, UUID id) {
+    visibleClaim(caller, id);
+    return activity.comments(id);
+  }
+
+  public Comment comment(Caller caller, UUID id, CommentRequest request) {
+    String body = requiredCommentBody(request);
+    visibleClaim(caller, id);
+    synchronized (activity) {
+      Comment comment =
+          new Comment(
+              UUID.randomUUID(), id, Instant.now(clock), caller.username(), caller.role(), body);
+      activity.append(comment);
+      return comment;
+    }
+  }
+
+  public List<Activity> audit() {
+    return activity.all();
+  }
+
+  private static String requiredCommentBody(CommentRequest request) {
+    if (request.body() == null || request.body().isBlank()) {
+      throw new BadRequestException("Comment cannot be empty.");
+    }
+    return request.body().trim();
   }
 
   public ClaimFile decide(Caller caller, UUID id, DecisionRequest request) {
