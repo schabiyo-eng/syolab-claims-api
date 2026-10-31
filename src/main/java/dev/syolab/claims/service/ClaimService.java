@@ -9,7 +9,6 @@ import dev.syolab.claims.domain.Comment;
 import dev.syolab.claims.domain.Decision;
 import dev.syolab.claims.domain.DecisionChange;
 import dev.syolab.claims.domain.Policy;
-import dev.syolab.claims.domain.ProductLine;
 import dev.syolab.claims.rules.Assessment;
 import dev.syolab.claims.rules.ClaimDraft;
 import dev.syolab.claims.rules.ClaimRuleEngine;
@@ -101,16 +100,11 @@ public class ClaimService {
   public BigDecimal calculatePayout(
       Policy policy, BigDecimal claimedAmount, BigDecimal remainingCoverage) {
     BigDecimal available = remainingCoverage.max(BigDecimal.ZERO);
-    if (policy.productLine() == ProductLine.AUTO) {
-      return claimedAmount
-          .min(available)
-          .subtract(policy.deductible())
-          .max(BigDecimal.ZERO)
-          .setScale(2, RoundingMode.HALF_EVEN);
-    }
-    BigDecimal net = claimedAmount.subtract(policy.deductible()).max(BigDecimal.ZERO);
-    BigDecimal coveredShare = net.divide(claimedAmount, 0, RoundingMode.DOWN);
-    return claimedAmount.min(available).multiply(coveredShare).setScale(2, RoundingMode.DOWN);
+    return claimedAmount
+        .min(available)
+        .subtract(policy.deductible())
+        .max(BigDecimal.ZERO)
+        .setScale(2, RoundingMode.HALF_EVEN);
   }
 
   public ClaimFile get(Caller caller, UUID id) {

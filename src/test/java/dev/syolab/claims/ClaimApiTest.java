@@ -115,6 +115,10 @@ class ClaimApiTest {
     assertThat(luis.get("status").asText()).isEqualTo("FLAGGED");
     assertThat(codes(luis)).contains("MISSING_DOCUMENTS");
     assertThat(luis.get("payout").isNull()).isTrue();
+
+    JsonNode grace = findClaimant(claims, "Grace Okafor");
+    assertThat(grace.get("status").asText()).isEqualTo("ACCEPTED");
+    assertThat(grace.get("payout").asText()).isEqualTo("750.00");
   }
 
   @Test
