@@ -8,6 +8,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.syolab.claims.auth.Logins;
+import dev.syolab.claims.auth.Role;
 import dev.syolab.claims.domain.Policy;
 import dev.syolab.claims.domain.PolicyStatus;
 import dev.syolab.claims.domain.ProductLine;
@@ -21,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
@@ -34,9 +37,14 @@ class ClaimApiTest {
   @Autowired private SeedData seedData;
   @Autowired private PolicyRepository policies;
 
+  private String adjuster;
+  private String claimant;
+
   @BeforeEach
-  void resetSeed() {
+  void resetSeed() throws Exception {
     seedData.reset();
+    adjuster = Logins.bearer(mockMvc, Role.ADJUSTER);
+    claimant = Logins.bearer(mockMvc, Role.CLAIMANT);
   }
 
   @Test
@@ -254,7 +262,10 @@ class ClaimApiTest {
   @Test
   void allowsTheDeskOrigin() throws Exception {
     mockMvc
-        .perform(get("/api/policies").header("Origin", "http://localhost:5173"))
+        .perform(
+            get("/api/policies")
+                .header(HttpHeaders.AUTHORIZATION, adjuster)
+                .header("Origin", "http://localhost:5173"))
         .andExpect(status().isOk())
         .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"));
   }
@@ -265,6 +276,7 @@ class ClaimApiTest {
         mockMvc
             .perform(
                 post("/api/claims")
+                    .header(HttpHeaders.AUTHORIZATION, claimant)
                     .header("Origin", "http://127.0.0.1:5173")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(
@@ -332,7 +344,11 @@ class ClaimApiTest {
 
   private MockHttpServletResponse postRaw(String json) throws Exception {
     return mockMvc
-        .perform(post("/api/claims").contentType(MediaType.APPLICATION_JSON).content(json))
+        .perform(
+            post("/api/claims")
+                .header(HttpHeaders.AUTHORIZATION, claimant)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json))
         .andReturn()
         .getResponse();
   }
@@ -344,7 +360,10 @@ class ClaimApiTest {
   }
 
   private MockHttpServletResponse getRaw(String path) throws Exception {
-    return mockMvc.perform(get(path)).andReturn().getResponse();
+    return mockMvc
+        .perform(get(path).header(HttpHeaders.AUTHORIZATION, adjuster))
+        .andReturn()
+        .getResponse();
   }
 
   private void assertError(MockHttpServletResponse response, int expectedStatus) throws Exception {

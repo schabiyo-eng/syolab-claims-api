@@ -5,7 +5,44 @@ info:
   description: Claims intake API for the Syolab insurance demo. Money amounts are decimal strings.
 servers:
   - url: http://localhost:8080
+security:
+  - bearerAuth: []
 paths:
+  /api/auth/login:
+    post:
+      operationId: login
+      summary: Sign in with a demo user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Signed bearer token and the signed-in user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/auth/me:
+    get:
+      operationId: getCurrentUser
+      summary: Who the bearer token belongs to
+      responses:
+        "200":
+          description: The signed-in user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUser"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   /api/policies:
     get:
       operationId: listPolicies
@@ -19,6 +56,8 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Policy"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   /api/policies/{policyNumber}:
     get:
       operationId: getPolicy
@@ -34,6 +73,8 @@ paths:
                 $ref: "#/components/schemas/Policy"
         "404":
           $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   /api/claims:
     get:
       operationId: listClaims
@@ -47,6 +88,8 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Claim"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
     post:
       operationId: createClaim
       summary: Submit a claim and run validation
@@ -65,6 +108,10 @@ paths:
                 $ref: "#/components/schemas/Claim"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /api/claims/{id}:
     get:
       operationId: getClaim
@@ -80,7 +127,14 @@ paths:
                 $ref: "#/components/schemas/Claim"
         "404":
           $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   parameters:
     PolicyNumber:
       name: policyNumber
@@ -103,12 +157,63 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorMessage"
     BadRequest:
-      description: Malformed claim
+      description: Malformed request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorMessage"
+    Unauthorized:
+      description: Missing, invalid, or expired bearer token, or wrong credentials on login
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorMessage"
+    Forbidden:
+      description: The caller's role cannot do this. Only claimants file claims.
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorMessage"
   schemas:
+    Role:
+      type: string
+      enum: [CLAIMANT, ADJUSTER]
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          example: dana
+        password:
+          type: string
+          format: password
+    LoginResponse:
+      type: object
+      additionalProperties: false
+      required: [token, username, role, displayName]
+      properties:
+        token:
+          type: string
+          description: HS256 JWT. Send as Authorization Bearer. Expires after 8 hours.
+        username:
+          type: string
+        role:
+          $ref: "#/components/schemas/Role"
+        displayName:
+          type: string
+    CurrentUser:
+      type: object
+      additionalProperties: false
+      required: [username, role, displayName]
+      properties:
+        username:
+          type: string
+        role:
+          $ref: "#/components/schemas/Role"
+        displayName:
+          type: string
     Policy:
       type: object
       additionalProperties: false
