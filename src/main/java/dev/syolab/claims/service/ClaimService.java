@@ -45,11 +45,10 @@ public class ClaimService {
     synchronized (claims) {
       validateShape(request);
       BigDecimal amount = MoneyParser.parse(request.amount());
-      Policy policyForScope = policies.findByNumber(request.policyNumber()).orElse(null);
-      if (!caller.canSee(policyForScope)) {
+      Policy policy = policies.findByNumber(request.policyNumber()).orElse(null);
+      if (!caller.canSee(policy)) {
         throw new NotFoundException("Policy not found.");
       }
-      Policy policy = policyForScope;
       List<Claim> open =
           policy == null ? List.of() : claims.findConsumingCoverage(policy.policyNumber());
       ClaimDraft draft =
