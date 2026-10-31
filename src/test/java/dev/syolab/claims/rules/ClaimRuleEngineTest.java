@@ -72,7 +72,7 @@ class ClaimRuleEngineTest {
     Policy expired =
         new Policy(
             "POL-OLD",
-            "Nora Blake",
+            "Test Holder",
             PolicyStatus.EXPIRED,
             ProductLine.AUTO,
             new BigDecimal("20000.00"),
@@ -112,7 +112,7 @@ class ClaimRuleEngineTest {
     Policy expired =
         new Policy(
             "POL-OLD",
-            "Nora Blake",
+            "Test Holder",
             PolicyStatus.EXPIRED,
             ProductLine.AUTO,
             new BigDecimal("100.00"),
@@ -220,6 +220,33 @@ class ClaimRuleEngineTest {
   }
 
   @Test
+  void rejectsClaimFiledUnderAnotherPersonsName() {
+    Assessment result =
+        engine.evaluate(
+            freshPolicy("10000.00"),
+            List.of(),
+            namedDraft("Nora Blake", "25.00", "2026-06-01", "Scratch", "police-report"),
+            today);
+
+    assertThat(result.status()).isEqualTo(ClaimStatus.REJECTED);
+    assertThat(codes(result)).containsExactly(FindingCode.CLAIMANT_NOT_POLICYHOLDER);
+    assertThat(result.findings().get(0).severity()).isEqualTo(Severity.ERROR);
+  }
+
+  @Test
+  void claimantNameMatchIgnoresCase() {
+    Assessment result =
+        engine.evaluate(
+            freshPolicy("10000.00"),
+            List.of(),
+            namedDraft("test holder", "25.00", "2026-06-01", "Scratch", "police-report"),
+            today);
+
+    assertThat(result.status()).isEqualTo(ClaimStatus.ACCEPTED);
+    assertThat(result.findings()).isEmpty();
+  }
+
+  @Test
   void openClaimsAreIncludedInTheCoverageSum() {
     Claim existing =
         new Claim(
@@ -261,9 +288,18 @@ class ClaimRuleEngineTest {
 
   private static ClaimDraft draft(
       String amount, String incidentDate, String description, String... documents) {
+    return namedDraft("Test Holder", amount, incidentDate, description, documents);
+  }
+
+  private static ClaimDraft namedDraft(
+      String claimantName,
+      String amount,
+      String incidentDate,
+      String description,
+      String... documents) {
     return new ClaimDraft(
         "POL-FRESH",
-        "Test Holder",
+        claimantName,
         new BigDecimal(amount),
         LocalDate.parse(incidentDate),
         description,
