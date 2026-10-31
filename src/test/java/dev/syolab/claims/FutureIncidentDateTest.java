@@ -5,6 +5,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.syolab.claims.auth.Logins;
+import dev.syolab.claims.auth.Role;
 import dev.syolab.claims.seed.SeedData;
 import java.time.Clock;
 import java.time.Instant;
@@ -17,6 +19,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -39,7 +42,7 @@ class FutureIncidentDateTest {
   @Autowired private SeedData seedData;
 
   @BeforeEach
-  void resetSeed() {
+  void resetSeed() throws Exception {
     seedData.reset();
   }
 
@@ -49,6 +52,7 @@ class FutureIncidentDateTest {
         mockMvc
             .perform(
                 post("/api/claims")
+                    .header(HttpHeaders.AUTHORIZATION, Logins.bearer(mockMvc, Role.ADJUSTER))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(
                         """
