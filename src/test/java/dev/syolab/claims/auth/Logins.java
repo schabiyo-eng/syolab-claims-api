@@ -13,12 +13,14 @@ public final class Logins {
   private Logins() {}
 
   /**
-   * Signs in through POST /api/auth/login as the first demo user with this role. Returns "Bearer
-   * <token>".
+   * Signs in through POST /api/auth/login as the named demo user. Returns "Bearer &lt;token&gt;".
    */
-  public static String bearer(MockMvc mockMvc, Role role) throws Exception {
+  public static String bearer(MockMvc mockMvc, String username) throws Exception {
     DemoUsers.DemoUser user =
-        DemoUsers.ALL.stream().filter(demo -> demo.role() == role).findFirst().orElseThrow();
+        DemoUsers.ALL.stream()
+            .filter(demo -> demo.username().equals(username))
+            .findFirst()
+            .orElseThrow();
     String body =
         mockMvc
             .perform(
@@ -35,5 +37,15 @@ public final class Logins {
             .getContentAsString();
     JsonNode json = new ObjectMapper().readTree(body);
     return "Bearer " + json.get("token").asText();
+  }
+
+  /**
+   * Signs in through POST /api/auth/login as the first demo user with this role. Returns "Bearer
+   * &lt;token&gt;".
+   */
+  public static String bearer(MockMvc mockMvc, Role role) throws Exception {
+    DemoUsers.DemoUser user =
+        DemoUsers.ALL.stream().filter(demo -> demo.role() == role).findFirst().orElseThrow();
+    return bearer(mockMvc, user.username());
   }
 }

@@ -1,5 +1,6 @@
 package dev.syolab.claims.web;
 
+import dev.syolab.claims.auth.Caller;
 import dev.syolab.claims.domain.Claim;
 import dev.syolab.claims.service.ClaimService;
 import dev.syolab.claims.service.NotFoundException;
@@ -8,6 +9,8 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,22 +31,24 @@ public class ClaimController {
 
   @GetMapping
   @Operation(operationId = "listClaims", summary = "List claims newest first")
-  public List<ClaimResponse> list() {
-    return claims.listNewestFirst().stream().map(ClaimResponse::from).toList();
+  public List<ClaimResponse> list(@AuthenticationPrincipal Jwt jwt) {
+    return claims.listNewestFirst(Caller.from(jwt)).stream().map(ClaimResponse::from).toList();
   }
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   @Operation(operationId = "createClaim", summary = "Submit a claim and run validation")
-  public ClaimResponse create(@RequestBody CreateClaimRequest request) {
-    return ClaimResponse.from(claims.submit(request));
+  public ClaimResponse create(
+      @AuthenticationPrincipal Jwt jwt, @RequestBody CreateClaimRequest request) {
+    return ClaimResponse.from(claims.submit(Caller.from(jwt), request));
   }
 
   @GetMapping("/{id}")
   @Operation(operationId = "getClaim", summary = "Get one claim")
-  public ResponseEntity<ClaimResponse> get(@PathVariable String id) {
+  public ResponseEntity<ClaimResponse> get(
+      @AuthenticationPrincipal Jwt jwt, @PathVariable String id) {
     UUID claimId = parseId(id);
-    Claim claim = claims.get(claimId);
+    Claim claim = claims.get(Caller.from(jwt), claimId);
     return ResponseEntity.ok(ClaimResponse.from(claim));
   }
 

@@ -1,5 +1,7 @@
 package dev.syolab.claims.seed;
 
+import dev.syolab.claims.auth.Caller;
+import dev.syolab.claims.auth.Role;
 import dev.syolab.claims.domain.Policy;
 import dev.syolab.claims.domain.PolicyStatus;
 import dev.syolab.claims.domain.ProductLine;
@@ -18,6 +20,8 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class SeedData implements ApplicationRunner {
+
+  private static final Caller DESK = new Caller("seed", Role.ADJUSTER);
 
   private final PolicyRepository policies;
   private final ClaimRepository claims;
@@ -46,6 +50,7 @@ public class SeedData implements ApplicationRunner {
     policies.save(
         policy(
             "POL-1001",
+            "amira",
             "Amira Shah",
             PolicyStatus.ACTIVE,
             ProductLine.AUTO,
@@ -57,6 +62,7 @@ public class SeedData implements ApplicationRunner {
     policies.save(
         policy(
             "POL-1002",
+            "luis",
             "Luis Ortega",
             PolicyStatus.ACTIVE,
             ProductLine.TRAVEL,
@@ -68,6 +74,7 @@ public class SeedData implements ApplicationRunner {
     policies.save(
         policy(
             "POL-1003",
+            "nora",
             "Nora Blake",
             PolicyStatus.EXPIRED,
             ProductLine.AUTO,
@@ -79,6 +86,7 @@ public class SeedData implements ApplicationRunner {
     policies.save(
         policy(
             "POL-1004",
+            "chris",
             "Chris Dalton",
             PolicyStatus.ACTIVE,
             ProductLine.AUTO,
@@ -90,6 +98,7 @@ public class SeedData implements ApplicationRunner {
     policies.save(
         policy(
             "POL-1005",
+            "grace",
             "Grace Okafor",
             PolicyStatus.ACTIVE,
             ProductLine.HOME,
@@ -157,6 +166,7 @@ public class SeedData implements ApplicationRunner {
 
   private static Policy policy(
       String number,
+      String holderId,
       String holder,
       PolicyStatus status,
       ProductLine productLine,
@@ -167,6 +177,7 @@ public class SeedData implements ApplicationRunner {
       List<String> documents) {
     return new Policy(
         number,
+        holderId,
         holder,
         status,
         productLine,
@@ -187,6 +198,7 @@ public class SeedData implements ApplicationRunner {
       List<String> documents,
       String createdAt) {
     claimService.submit(
+        DESK,
         new CreateClaimRequest(
             policyNumber, claimant, amount, LocalDate.parse(incidentDate), description, documents),
         UUID.fromString(id),

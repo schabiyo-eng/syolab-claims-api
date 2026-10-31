@@ -8,13 +8,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.syolab.claims.auth.Caller;
 import dev.syolab.claims.auth.Logins;
 import dev.syolab.claims.auth.Role;
+import dev.syolab.claims.domain.Claim;
 import dev.syolab.claims.domain.Policy;
 import dev.syolab.claims.domain.PolicyStatus;
 import dev.syolab.claims.domain.ProductLine;
 import dev.syolab.claims.seed.SeedData;
+import dev.syolab.claims.service.ClaimService;
 import dev.syolab.claims.store.PolicyRepository;
+import dev.syolab.claims.web.CreateClaimRequest;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -36,15 +40,18 @@ class ClaimApiTest {
   @Autowired private ObjectMapper objectMapper;
   @Autowired private SeedData seedData;
   @Autowired private PolicyRepository policies;
+  @Autowired private ClaimService claimService;
 
   private String adjuster;
   private String claimant;
+  private String luis;
 
   @BeforeEach
   void resetSeed() throws Exception {
     seedData.reset();
     adjuster = Logins.bearer(mockMvc, Role.ADJUSTER);
     claimant = Logins.bearer(mockMvc, Role.CLAIMANT);
+    luis = Logins.bearer(mockMvc, "luis");
   }
 
   @Test
@@ -131,6 +138,7 @@ class ClaimApiTest {
   void createsAWellFormedClaim() throws Exception {
     JsonNode created =
         postClaim(
+            luis,
             claimJson("POL-1002", "\"100.00\"", "2026-06-01", "Follow up visit", "medical-bill"));
 
     assertThat(created.get("status").asText()).isEqualTo("ACCEPTED");
@@ -251,9 +259,17 @@ class ClaimApiTest {
 
   @Test
   void unknownPolicyNumberIsStored() throws Exception {
-    JsonNode created =
-        postClaim(
-            claimJson("POL-MISSING", "\"20.00\"", "2026-06-01", "No such policy", "police-report"));
+    Claim stored =
+        claimService.submit(
+            new Caller("dana", Role.ADJUSTER),
+            new CreateClaimRequest(
+                "POL-MISSING",
+                "Test Holder",
+                "20.00",
+                LocalDate.parse("2026-06-01"),
+                "No such policy",
+                List.of("police-report")));
+    JsonNode created = getJson("/api/claims/" + stored.id());
 
     assertThat(created.get("status").asText()).isEqualTo("REJECTED");
     assertThat(codes(created)).containsExactly("POLICY_NOT_FOUND");
@@ -276,7 +292,7 @@ class ClaimApiTest {
         mockMvc
             .perform(
                 post("/api/claims")
-                    .header(HttpHeaders.AUTHORIZATION, claimant)
+                    .header(HttpHeaders.AUTHORIZATION, luis)
                     .header("Origin", "http://127.0.0.1:5173")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(
@@ -307,6 +323,7 @@ class ClaimApiTest {
     policies.save(
         new Policy(
             number,
+            "amira",
             "Test Holder",
             PolicyStatus.ACTIVE,
             ProductLine.AUTO,
@@ -337,16 +354,24 @@ class ClaimApiTest {
   }
 
   private JsonNode postClaim(String json) throws Exception {
-    MockHttpServletResponse response = postRaw(json);
+    return postClaim(claimant, json);
+  }
+
+  private JsonNode postClaim(String token, String json) throws Exception {
+    MockHttpServletResponse response = postRaw(token, json);
     assertThat(response.getStatus()).isEqualTo(201);
     return objectMapper.readTree(response.getContentAsString());
   }
 
   private MockHttpServletResponse postRaw(String json) throws Exception {
+    return postRaw(claimant, json);
+  }
+
+  private MockHttpServletResponse postRaw(String token, String json) throws Exception {
     return mockMvc
         .perform(
             post("/api/claims")
-                .header(HttpHeaders.AUTHORIZATION, claimant)
+                .header(HttpHeaders.AUTHORIZATION, token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
         .andReturn()
