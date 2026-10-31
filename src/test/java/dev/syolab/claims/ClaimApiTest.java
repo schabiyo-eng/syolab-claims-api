@@ -351,10 +351,11 @@ class ClaimApiTest {
       }
       docs.append('"').append(documents[i]).append('"');
     }
+    String holder = policies.findByNumber(policy).map(Policy::holderName).orElse("Test Holder");
     return """
-{"policyNumber":"%s","claimantName":"Test Holder","amount":%s,"incidentDate":"%s","description":"%s","documentNames":[%s]}
+{"policyNumber":"%s","claimantName":"%s","amount":%s,"incidentDate":"%s","description":"%s","documentNames":[%s]}
 """
-        .formatted(policy, amountLiteral, incidentDate, description, docs);
+        .formatted(policy, holder, amountLiteral, incidentDate, description, docs);
   }
 
   private JsonNode postClaim(String json) throws Exception {

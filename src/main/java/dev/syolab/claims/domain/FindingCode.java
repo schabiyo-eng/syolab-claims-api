@@ -3,6 +3,7 @@ package dev.syolab.claims.domain;
 public enum FindingCode {
   POLICY_NOT_FOUND,
   POLICY_INACTIVE,
+  CLAIMANT_NOT_POLICYHOLDER,
   EXCEEDS_COVERAGE,
   MISSING_DOCUMENTS,
   POSSIBLE_FRAUD

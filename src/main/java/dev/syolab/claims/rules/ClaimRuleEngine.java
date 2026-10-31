@@ -49,6 +49,13 @@ public class ClaimRuleEngine {
               "Open claims exceed the policy coverage limit."));
     }
 
+    if (!isPolicyholder(policy, draft)) {
+      findings.add(
+          finding(
+              FindingCode.CLAIMANT_NOT_POLICYHOLDER,
+              Severity.ERROR,
+              "The claimant is not the policyholder on this policy."));
+    }
     if (missingDocuments(policy, draft)) {
       findings.add(
           finding(
@@ -66,6 +73,10 @@ public class ClaimRuleEngine {
     BigDecimal open =
         openClaims.stream().map(Claim::amount).reduce(BigDecimal.ZERO, BigDecimal::add);
     return open.add(draft.amount()).compareTo(policy.coverageLimit()) > 0;
+  }
+
+  private static boolean isPolicyholder(Policy policy, ClaimDraft draft) {
+    return draft.claimantName().trim().equalsIgnoreCase(policy.holderName().trim());
   }
 
   private static boolean missingDocuments(Policy policy, ClaimDraft draft) {
