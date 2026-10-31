@@ -136,6 +136,97 @@ paths:
           $ref: "#/components/responses/NotFound"
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /api/claims/{id}/decision:
+    post:
+      operationId: decideClaim
+      summary: Record an adjuster decision on a claim
+      parameters:
+        - $ref: "#/components/parameters/ClaimId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecisionRequest"
+      responses:
+        "200":
+          description: Claim with updated decision and history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/claims/{id}/comments:
+    get:
+      operationId: listComments
+      summary: List comments on a claim
+      description: Claimants get 404 for a claim on a policy they don't hold, the same response as for a claim that doesn't exist.
+      parameters:
+        - $ref: "#/components/parameters/ClaimId"
+      responses:
+        "200":
+          description: Comments in chronological order
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Comment"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      operationId: createComment
+      summary: Add a comment on a claim
+      description: Claimants get 404 for a claim on a policy they don't hold, the same response as for a claim that doesn't exist.
+      parameters:
+        - $ref: "#/components/parameters/ClaimId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentRequest"
+      responses:
+        "201":
+          description: The stored comment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/audit:
+    get:
+      operationId: listAudit
+      summary: List the append-only audit log
+      responses:
+        "200":
+          description: Audit entries in append order, oldest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditEntry"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 components:
   securitySchemes:
     bearerAuth:
@@ -176,7 +267,13 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorMessage"
     Forbidden:
-      description: The caller's role cannot do this. Only claimants file claims.
+      description: The caller's role cannot do this.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorMessage"
+    Conflict:
+      description: The claim already has a final decision.
       content:
         application/json:
           schema:
@@ -283,6 +380,99 @@ components:
           type: array
           items:
             type: string
+    Decision:
+      type: string
+      enum: [PENDING, APPROVED, DENIED, INFO_REQUESTED]
+    ActivityAction:
+      type: string
+      enum: [DECIDED, COMMENTED]
+    DecisionRequest:
+      type: object
+      additionalProperties: false
+      required: [decision]
+      properties:
+        decision:
+          type: string
+          enum: [APPROVED, DENIED, INFO_REQUESTED]
+        note:
+          type: string
+          description: Required when decision is DENIED or INFO_REQUESTED.
+    HistoryEntry:
+      type: object
+      additionalProperties: false
+      required: [at, actor, action, fromDecision, toDecision, note]
+      properties:
+        at:
+          type: string
+          format: date-time
+        actor:
+          type: string
+        action:
+          $ref: "#/components/schemas/ActivityAction"
+        fromDecision:
+          $ref: "#/components/schemas/Decision"
+        toDecision:
+          $ref: "#/components/schemas/Decision"
+        note:
+          type: string
+          nullable: true
+    CommentRequest:
+      type: object
+      additionalProperties: false
+      required: [body]
+      properties:
+        body:
+          type: string
+    Comment:
+      type: object
+      additionalProperties: false
+      required: [id, at, author, role, body]
+      properties:
+        id:
+          type: string
+          format: uuid
+        at:
+          type: string
+          format: date-time
+        author:
+          type: string
+        role:
+          $ref: "#/components/schemas/Role"
+        body:
+          type: string
+    AuditEntry:
+      type: object
+      additionalProperties: false
+      required:
+        [sequence, at, actor, role, action, claimId, fromDecision, toDecision, commentId]
+      properties:
+        sequence:
+          type: integer
+          format: int64
+        at:
+          type: string
+          format: date-time
+        actor:
+          type: string
+        role:
+          $ref: "#/components/schemas/Role"
+        action:
+          $ref: "#/components/schemas/ActivityAction"
+        claimId:
+          type: string
+          format: uuid
+        fromDecision:
+          allOf:
+            - $ref: "#/components/schemas/Decision"
+          nullable: true
+        toDecision:
+          allOf:
+            - $ref: "#/components/schemas/Decision"
+          nullable: true
+        commentId:
+          type: string
+          format: uuid
+          nullable: true
     Claim:
       type: object
       additionalProperties: false
@@ -297,6 +487,8 @@ components:
         - status
         - findings
         - createdAt
+        - decision
+        - history
       properties:
         id:
           type: string
@@ -331,6 +523,12 @@ components:
         createdAt:
           type: string
           format: date-time
+        decision:
+          $ref: "#/components/schemas/Decision"
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/HistoryEntry"
     ValidationFinding:
       type: object
       additionalProperties: false
