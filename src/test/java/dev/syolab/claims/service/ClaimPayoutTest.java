@@ -62,6 +62,7 @@ class ClaimPayoutTest {
   static Policy policy(ProductLine line, String deductible) {
     return new Policy(
         "POL-FRESH",
+        "test-holder",
         "Test Holder",
         PolicyStatus.ACTIVE,
         line,

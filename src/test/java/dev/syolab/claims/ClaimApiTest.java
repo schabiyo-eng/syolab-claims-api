@@ -307,6 +307,7 @@ class ClaimApiTest {
     policies.save(
         new Policy(
             number,
+            "amira",
             "Test Holder",
             PolicyStatus.ACTIVE,
             ProductLine.AUTO,
