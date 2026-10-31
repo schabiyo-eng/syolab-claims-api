@@ -9,3 +9,8 @@ spring:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+    persist-authorization: true
+
+claims:
+  auth:
+    token-secret: ${CLAIMS_AUTH_TOKEN_SECRET:syolab-claims-dev-only-signing-secret}
