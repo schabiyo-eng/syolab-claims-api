@@ -1,7 +1,7 @@
 package dev.syolab.claims.web;
 
 import dev.syolab.claims.auth.Caller;
-import dev.syolab.claims.domain.Claim;
+import dev.syolab.claims.domain.ClaimFile;
 import dev.syolab.claims.service.ClaimService;
 import dev.syolab.claims.service.NotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,7 +40,7 @@ public class ClaimController {
   @Operation(operationId = "createClaim", summary = "Submit a claim and run validation")
   public ClaimResponse create(
       @AuthenticationPrincipal Jwt jwt, @RequestBody CreateClaimRequest request) {
-    return ClaimResponse.from(claims.submit(Caller.from(jwt), request));
+    return ClaimResponse.from(ClaimFile.submitted(claims.submit(Caller.from(jwt), request)));
   }
 
   @GetMapping("/{id}")
@@ -48,8 +48,7 @@ public class ClaimController {
   public ResponseEntity<ClaimResponse> get(
       @AuthenticationPrincipal Jwt jwt, @PathVariable String id) {
     UUID claimId = parseId(id);
-    Claim claim = claims.get(Caller.from(jwt), claimId);
-    return ResponseEntity.ok(ClaimResponse.from(claim));
+    return ResponseEntity.ok(ClaimResponse.from(claims.get(Caller.from(jwt), claimId)));
   }
 
   private static UUID parseId(String id) {

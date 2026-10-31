@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.syolab.claims.domain.ProductLine;
 import dev.syolab.claims.rules.ClaimRuleEngine;
+import dev.syolab.claims.store.ActivityLog;
 import dev.syolab.claims.store.ClaimRepository;
 import dev.syolab.claims.store.PolicyRepository;
 import java.math.BigDecimal;
@@ -16,7 +17,11 @@ class HomePayoutRegressionTest {
 
   private final ClaimService service =
       new ClaimService(
-          new ClaimRepository(), new PolicyRepository(), new ClaimRuleEngine(), Clock.systemUTC());
+          new ClaimRepository(),
+          new PolicyRepository(),
+          new ActivityLog(),
+          new ClaimRuleEngine(),
+          Clock.systemUTC());
 
   @Test
   void homePaysClaimedAmountLessDeductibleWhenCoverageRemains() {

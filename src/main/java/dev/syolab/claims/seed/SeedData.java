@@ -6,6 +6,7 @@ import dev.syolab.claims.domain.Policy;
 import dev.syolab.claims.domain.PolicyStatus;
 import dev.syolab.claims.domain.ProductLine;
 import dev.syolab.claims.service.ClaimService;
+import dev.syolab.claims.store.ActivityLog;
 import dev.syolab.claims.store.ClaimRepository;
 import dev.syolab.claims.store.PolicyRepository;
 import dev.syolab.claims.web.CreateClaimRequest;
@@ -25,11 +26,17 @@ public class SeedData implements ApplicationRunner {
 
   private final PolicyRepository policies;
   private final ClaimRepository claims;
+  private final ActivityLog activity;
   private final ClaimService claimService;
 
-  public SeedData(PolicyRepository policies, ClaimRepository claims, ClaimService claimService) {
+  public SeedData(
+      PolicyRepository policies,
+      ClaimRepository claims,
+      ActivityLog activity,
+      ClaimService claimService) {
     this.policies = policies;
     this.claims = claims;
+    this.activity = activity;
     this.claimService = claimService;
   }
 
@@ -42,6 +49,7 @@ public class SeedData implements ApplicationRunner {
     synchronized (claims) {
       claims.clear();
       policies.clear();
+      activity.clear();
       load();
     }
   }

@@ -2,12 +2,14 @@ package dev.syolab.claims.service;
 
 import dev.syolab.claims.auth.Caller;
 import dev.syolab.claims.domain.Claim;
+import dev.syolab.claims.domain.ClaimFile;
 import dev.syolab.claims.domain.ClaimStatus;
 import dev.syolab.claims.domain.Policy;
 import dev.syolab.claims.domain.ProductLine;
 import dev.syolab.claims.rules.Assessment;
 import dev.syolab.claims.rules.ClaimDraft;
 import dev.syolab.claims.rules.ClaimRuleEngine;
+import dev.syolab.claims.store.ActivityLog;
 import dev.syolab.claims.store.ClaimRepository;
 import dev.syolab.claims.store.PolicyRepository;
 import dev.syolab.claims.web.CreateClaimRequest;
@@ -26,13 +28,19 @@ public class ClaimService {
 
   private final ClaimRepository claims;
   private final PolicyRepository policies;
+  private final ActivityLog activity;
   private final ClaimRuleEngine engine;
   private final Clock clock;
 
   public ClaimService(
-      ClaimRepository claims, PolicyRepository policies, ClaimRuleEngine engine, Clock clock) {
+      ClaimRepository claims,
+      PolicyRepository policies,
+      ActivityLog activity,
+      ClaimRuleEngine engine,
+      Clock clock) {
     this.claims = claims;
     this.policies = policies;
+    this.activity = activity;
     this.engine = engine;
     this.clock = clock;
   }
@@ -99,15 +107,23 @@ public class ClaimService {
     return claimedAmount.min(available).multiply(coveredShare).setScale(2, RoundingMode.DOWN);
   }
 
-  public Claim get(Caller caller, UUID id) {
+  public ClaimFile get(Caller caller, UUID id) {
+    Claim claim = visibleClaim(caller, id);
+    return new ClaimFile(claim, activity.history(id));
+  }
+
+  public List<ClaimFile> listNewestFirst(Caller caller) {
+    return claims.findAllNewestFirst().stream()
+        .filter(claim -> visible(caller, claim))
+        .map(claim -> new ClaimFile(claim, activity.history(claim.id())))
+        .toList();
+  }
+
+  private Claim visibleClaim(Caller caller, UUID id) {
     return claims
         .findById(id)
         .filter(claim -> visible(caller, claim))
         .orElseThrow(() -> new NotFoundException("Claim not found."));
-  }
-
-  public List<Claim> listNewestFirst(Caller caller) {
-    return claims.findAllNewestFirst().stream().filter(claim -> visible(caller, claim)).toList();
   }
 
   private boolean visible(Caller caller, Claim claim) {
