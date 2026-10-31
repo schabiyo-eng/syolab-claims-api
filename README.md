@@ -18,6 +18,8 @@ Demo users (passwords are defined in `src/main/java/dev/syolab/claims/auth/DemoU
 | luis     | luis-demo   | CLAIMANT | Luis Ortega    | POL-1002 |
 | dana     | dana-demo   | ADJUSTER | Dana Whitfield |          |
 
+Claimants see only their own policies and claims. Adjusters see everything.
+
 The signing secret has a dev default. Set `CLAIMS_AUTH_TOKEN_SECRET` (32 bytes or more) anywhere else.
 
 ## Run

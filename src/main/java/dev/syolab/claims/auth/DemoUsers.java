@@ -8,14 +8,13 @@ import java.util.Optional;
 /** The demo sign-ins. README lists the same rows, and AuthApiTest fails when they drift. */
 final class DemoUsers {
 
-  record DemoUser(
-      String username, String password, Role role, String displayName, String policyNumber) {}
+  record DemoUser(String username, String password, Role role, String displayName) {}
 
   static final List<DemoUser> ALL =
       List.of(
-          new DemoUser("amira", "amira-demo", Role.CLAIMANT, "Amira Shah", "POL-1001"),
-          new DemoUser("luis", "luis-demo", Role.CLAIMANT, "Luis Ortega", "POL-1002"),
-          new DemoUser("dana", "dana-demo", Role.ADJUSTER, "Dana Whitfield", null));
+          new DemoUser("amira", "amira-demo", Role.CLAIMANT, "Amira Shah"),
+          new DemoUser("luis", "luis-demo", Role.CLAIMANT, "Luis Ortega"),
+          new DemoUser("dana", "dana-demo", Role.ADJUSTER, "Dana Whitfield"));
 
   private DemoUsers() {}
 
