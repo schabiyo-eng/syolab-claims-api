@@ -73,7 +73,7 @@ class ClaimRuleEngineTest {
         new Policy(
             "POL-OLD",
             "test-holder",
-            "Nora Blake",
+            "Test Holder",
             PolicyStatus.EXPIRED,
             ProductLine.AUTO,
             new BigDecimal("20000.00"),
@@ -114,7 +114,7 @@ class ClaimRuleEngineTest {
         new Policy(
             "POL-OLD",
             "test-holder",
-            "Nora Blake",
+            "Test Holder",
             PolicyStatus.EXPIRED,
             ProductLine.AUTO,
             new BigDecimal("100.00"),
@@ -219,6 +219,49 @@ class ClaimRuleEngineTest {
 
     assertThat(result.status()).isEqualTo(ClaimStatus.FLAGGED);
     assertThat(codes(result)).containsExactly(FindingCode.POSSIBLE_FRAUD);
+  }
+
+  @Test
+  void rejectsClaimantWhoIsNotThePolicyholder() {
+    ClaimDraft other =
+        new ClaimDraft(
+            "POL-FRESH",
+            "Someone Else",
+            new BigDecimal("25.00"),
+            LocalDate.parse("2026-06-01"),
+            "Scratch",
+            List.of("police-report"));
+
+    Assessment result = engine.evaluate(freshPolicy("10000.00"), List.of(), other, today);
+
+    assertThat(result.status()).isEqualTo(ClaimStatus.REJECTED);
+    assertThat(codes(result)).containsExactly(FindingCode.CLAIMANT_NOT_POLICYHOLDER);
+    assertThat(result.findings().get(0).severity()).isEqualTo(Severity.ERROR);
+  }
+
+  @Test
+  void claimantMatchingThePolicyholderStaysAccepted() {
+    ClaimDraft differentCase =
+        new ClaimDraft(
+            "POL-FRESH",
+            "test holder",
+            new BigDecimal("25.00"),
+            LocalDate.parse("2026-06-01"),
+            "Scratch",
+            List.of("police-report"));
+
+    Assessment exact =
+        engine.evaluate(
+            freshPolicy("10000.00"),
+            List.of(),
+            draft("25.00", "2026-06-01", "Scratch", "police-report"),
+            today);
+    Assessment caseOnly = engine.evaluate(freshPolicy("10000.00"), List.of(), differentCase, today);
+
+    assertThat(exact.status()).isEqualTo(ClaimStatus.ACCEPTED);
+    assertThat(exact.findings()).isEmpty();
+    assertThat(caseOnly.status()).isEqualTo(ClaimStatus.ACCEPTED);
+    assertThat(caseOnly.findings()).isEmpty();
   }
 
   @Test
