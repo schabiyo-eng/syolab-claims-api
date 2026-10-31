@@ -10,6 +10,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.syolab.claims.seed.SeedData;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -223,6 +225,15 @@ class AuthApiTest {
       JsonNode policy = findPolicy(policies, user.policyNumber());
       assertThat(policy).isNotNull();
       assertThat(policy.get("holderName").asText()).isEqualTo(user.displayName());
+    }
+  }
+
+  @Test
+  void readmeListsEveryDemoUser() throws Exception {
+    String readme = Files.readString(Path.of("README.md"));
+    for (DemoUsers.DemoUser user : DemoUsers.ALL) {
+      assertThat(readme).contains(user.username());
+      assertThat(readme).contains(user.password());
     }
   }
 

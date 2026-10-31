@@ -4,6 +4,21 @@ Claims intake API for the Syolab insurance demo. Adjusters submit a claim, and t
 
 The store is in memory. Data resets when the process restarts.
 
+## Sign in
+
+Every `/api/**` endpoint except `POST /api/auth/login` needs `Authorization: Bearer <token>`.
+Tokens are signed JWTs that last 8 hours. Swagger UI stays open. Use its Authorize button to paste a token.
+
+Demo users (passwords are defined in `src/main/java/dev/syolab/claims/auth/DemoUsers.java`):
+
+| Username | Password    | Role     | Display name   | Policy   |
+| -------- | ----------- | -------- | -------------- | -------- |
+| amira    | amira-demo  | CLAIMANT | Amira Shah     | POL-1001 |
+| luis     | luis-demo   | CLAIMANT | Luis Ortega    | POL-1002 |
+| dana     | dana-demo   | ADJUSTER | Dana Whitfield |          |
+
+The signing secret has a dev default. Set `CLAIMS_AUTH_TOKEN_SECRET` (32 bytes or more) anywhere else.
+
 ## Run
 
 Java 17 or newer.
