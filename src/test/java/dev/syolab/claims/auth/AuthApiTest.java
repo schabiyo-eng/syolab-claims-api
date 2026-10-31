@@ -128,9 +128,9 @@ class AuthApiTest {
   @Test
   void tamperedTokenIsUnauthorized() throws Exception {
     String token = Logins.bearer(mockMvc, Role.ADJUSTER).substring("Bearer ".length());
-    char last = token.charAt(token.length() - 1);
-    char flipped = last == 'a' ? 'b' : 'a';
-    String bad = token.substring(0, token.length() - 1) + flipped;
+    int inSignature = token.length() - 10;
+    char flipped = token.charAt(inSignature) == 'a' ? 'b' : 'a';
+    String bad = token.substring(0, inSignature) + flipped + token.substring(inSignature + 1);
 
     mockMvc
         .perform(get("/api/claims").header(HttpHeaders.AUTHORIZATION, "Bearer " + bad))
@@ -170,6 +170,35 @@ class AuthApiTest {
               JsonNode claims = objectMapper.readTree(result.getResponse().getContentAsString());
               assertThat(claims).hasSize(6);
             });
+  }
+
+  @Test
+  void adjusterCannotFileClaims() throws Exception {
+    MockHttpServletResponse response =
+        mockMvc
+            .perform(
+                post("/api/claims")
+                    .header(HttpHeaders.AUTHORIZATION, Logins.bearer(mockMvc, Role.ADJUSTER))
+                    .header("Origin", "http://localhost:5173")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+{"policyNumber":"POL-1001","claimantName":"Amira Shah","amount":"10.00","incidentDate":"2026-06-01","description":"Scratch","documentNames":["police-report","repair-estimate"]}
+"""))
+            .andReturn()
+            .getResponse();
+
+    assertOneFieldError(response, 403);
+    assertThat(response.getHeader("Access-Control-Allow-Origin"))
+        .isEqualTo("http://localhost:5173");
+    mockMvc
+        .perform(
+            get("/api/claims")
+                .header(HttpHeaders.AUTHORIZATION, Logins.bearer(mockMvc, Role.ADJUSTER)))
+        .andExpect(
+            result ->
+                assertThat(objectMapper.readTree(result.getResponse().getContentAsString()))
+                    .hasSize(6));
   }
 
   @Test

@@ -38,11 +38,13 @@ class ClaimApiTest {
   @Autowired private PolicyRepository policies;
 
   private String adjuster;
+  private String claimant;
 
   @BeforeEach
   void resetSeed() throws Exception {
     seedData.reset();
     adjuster = Logins.bearer(mockMvc, Role.ADJUSTER);
+    claimant = Logins.bearer(mockMvc, Role.CLAIMANT);
   }
 
   @Test
@@ -274,7 +276,7 @@ class ClaimApiTest {
         mockMvc
             .perform(
                 post("/api/claims")
-                    .header(HttpHeaders.AUTHORIZATION, adjuster)
+                    .header(HttpHeaders.AUTHORIZATION, claimant)
                     .header("Origin", "http://127.0.0.1:5173")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(
@@ -344,7 +346,7 @@ class ClaimApiTest {
     return mockMvc
         .perform(
             post("/api/claims")
-                .header(HttpHeaders.AUTHORIZATION, adjuster)
+                .header(HttpHeaders.AUTHORIZATION, claimant)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
         .andReturn()

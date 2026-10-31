@@ -110,6 +110,8 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /api/claims/{id}:
     get:
       operationId: getClaim
@@ -162,6 +164,12 @@ components:
             $ref: "#/components/schemas/ErrorMessage"
     Unauthorized:
       description: Missing, invalid, or expired bearer token, or wrong credentials on login
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorMessage"
+    Forbidden:
+      description: The caller's role cannot do this. Only claimants file claims.
       content:
         application/json:
           schema:

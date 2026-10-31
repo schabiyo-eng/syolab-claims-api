@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
   private static final Duration TOKEN_TTL = Duration.ofHours(8);
-  private static final String ROLE_CLAIM = "role";
+  static final String ROLE_CLAIM = "role";
   private static final String NAME_CLAIM = "name";
 
   private final JwtEncoder tokens;

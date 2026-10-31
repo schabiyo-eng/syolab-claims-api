@@ -42,7 +42,7 @@ class FutureIncidentDateTest {
   @Autowired private SeedData seedData;
 
   @BeforeEach
-  void resetSeed() throws Exception {
+  void resetSeed() {
     seedData.reset();
   }
 
@@ -52,7 +52,7 @@ class FutureIncidentDateTest {
         mockMvc
             .perform(
                 post("/api/claims")
-                    .header(HttpHeaders.AUTHORIZATION, Logins.bearer(mockMvc, Role.ADJUSTER))
+                    .header(HttpHeaders.AUTHORIZATION, Logins.bearer(mockMvc, Role.CLAIMANT))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(
                         """

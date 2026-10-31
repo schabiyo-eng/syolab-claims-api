@@ -1,12 +1,13 @@
 # Syolab Claims API
 
-Claims intake API for the Syolab insurance demo. Adjusters submit a claim, and the API stores it with a validation status.
+Claims intake API for the Syolab insurance demo. Claimants submit a claim, and the API stores it with a validation status. Adjusters review claims and policies.
 
 The store is in memory. Data resets when the process restarts.
 
 ## Sign in
 
 Every `/api/**` endpoint except `POST /api/auth/login` needs `Authorization: Bearer <token>`.
+Only `CLAIMANT` users can call `POST /api/claims`. An `ADJUSTER` gets 403.
 Tokens are signed JWTs that last 8 hours. Swagger UI stays open. Use its Authorize button to paste a token.
 
 Demo users (passwords are defined in `src/main/java/dev/syolab/claims/auth/DemoUsers.java`):

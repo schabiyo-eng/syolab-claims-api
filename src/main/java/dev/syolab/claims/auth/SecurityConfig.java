@@ -27,6 +27,8 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
@@ -70,6 +72,8 @@ public class SecurityConfig {
             auth ->
                 auth.requestMatchers(HttpMethod.POST, "/api/auth/login")
                     .permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/claims")
+                    .hasRole(Role.CLAIMANT.name())
                     .requestMatchers("/api/**")
                     .authenticated()
                     .anyRequest()
@@ -77,9 +81,28 @@ public class SecurityConfig {
         .oauth2ResourceServer(
             oauth ->
                 oauth
-                    .jwt(Customizer.withDefaults())
-                    .authenticationEntryPoint(jsonEntryPoint(json)));
+                    .jwt(jwt -> jwt.jwtAuthenticationConverter(roleFromToken()))
+                    .authenticationEntryPoint(jsonEntryPoint(json)))
+        .exceptionHandling(
+            exceptions ->
+                exceptions.accessDeniedHandler(
+                    (request, response, denied) -> {
+                      response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                      response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                      json.writeValue(
+                          response.getOutputStream(),
+                          new ErrorMessage("Your role is not allowed to do this."));
+                    }));
     return http.build();
+  }
+
+  private static JwtAuthenticationConverter roleFromToken() {
+    JwtGrantedAuthoritiesConverter authorities = new JwtGrantedAuthoritiesConverter();
+    authorities.setAuthoritiesClaimName(AuthController.ROLE_CLAIM);
+    authorities.setAuthorityPrefix("ROLE_");
+    JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+    converter.setJwtGrantedAuthoritiesConverter(authorities);
+    return converter;
   }
 
   private static AuthenticationEntryPoint jsonEntryPoint(ObjectMapper json) {
