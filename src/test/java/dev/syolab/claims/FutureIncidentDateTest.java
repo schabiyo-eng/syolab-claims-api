@@ -6,7 +6,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.syolab.claims.auth.Logins;
-import dev.syolab.claims.auth.Role;
 import dev.syolab.claims.seed.SeedData;
 import java.time.Clock;
 import java.time.Instant;
@@ -52,7 +51,7 @@ class FutureIncidentDateTest {
         mockMvc
             .perform(
                 post("/api/claims")
-                    .header(HttpHeaders.AUTHORIZATION, Logins.bearer(mockMvc, Role.CLAIMANT))
+                    .header(HttpHeaders.AUTHORIZATION, Logins.bearer(mockMvc, "luis"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(
                         """

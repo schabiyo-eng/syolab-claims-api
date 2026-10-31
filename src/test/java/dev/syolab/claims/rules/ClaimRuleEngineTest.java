@@ -72,6 +72,7 @@ class ClaimRuleEngineTest {
     Policy expired =
         new Policy(
             "POL-OLD",
+            "test-holder",
             "Nora Blake",
             PolicyStatus.EXPIRED,
             ProductLine.AUTO,
@@ -112,6 +113,7 @@ class ClaimRuleEngineTest {
     Policy expired =
         new Policy(
             "POL-OLD",
+            "test-holder",
             "Nora Blake",
             PolicyStatus.EXPIRED,
             ProductLine.AUTO,
@@ -249,6 +251,7 @@ class ClaimRuleEngineTest {
     List<String> required = documents.length == 0 ? List.of("police-report") : List.of(documents);
     return new Policy(
         "POL-FRESH",
+        "test-holder",
         "Test Holder",
         PolicyStatus.ACTIVE,
         ProductLine.AUTO,

@@ -47,6 +47,7 @@ paths:
     get:
       operationId: listPolicies
       summary: List policies
+      description: Adjusters get every policy. Claimants get only the policies they hold.
       responses:
         "200":
           description: Policies in stable policy-number order
@@ -62,6 +63,7 @@ paths:
     get:
       operationId: getPolicy
       summary: Get one policy
+      description: Claimants get 404 for a policy they don't hold, the same response as for a policy that doesn't exist.
       parameters:
         - $ref: "#/components/parameters/PolicyNumber"
       responses:
@@ -79,6 +81,7 @@ paths:
     get:
       operationId: listClaims
       summary: List claims newest first
+      description: Adjusters get every claim. Claimants get only claims on policies they hold.
       responses:
         "200":
           description: Claims ordered by createdAt descending
@@ -93,6 +96,7 @@ paths:
     post:
       operationId: createClaim
       summary: Submit a claim and run validation
+      description: Claimants file only on policies they hold. Any other policy number, including one that doesn't exist, returns 404 and stores nothing.
       requestBody:
         required: true
         content:
@@ -112,10 +116,13 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /api/claims/{id}:
     get:
       operationId: getClaim
       summary: Get one claim
+      description: Claimants get 404 for a claim on a policy they don't hold, the same response as for a claim that doesn't exist.
       parameters:
         - $ref: "#/components/parameters/ClaimId"
       responses:
