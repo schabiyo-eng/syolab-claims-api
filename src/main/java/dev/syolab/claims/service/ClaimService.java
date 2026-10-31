@@ -1,16 +1,24 @@
 package dev.syolab.claims.service;
 
 import dev.syolab.claims.auth.Caller;
+import dev.syolab.claims.domain.Activity;
 import dev.syolab.claims.domain.Claim;
+import dev.syolab.claims.domain.ClaimFile;
 import dev.syolab.claims.domain.ClaimStatus;
+import dev.syolab.claims.domain.Comment;
+import dev.syolab.claims.domain.Decision;
+import dev.syolab.claims.domain.DecisionChange;
 import dev.syolab.claims.domain.Policy;
 import dev.syolab.claims.domain.ProductLine;
 import dev.syolab.claims.rules.Assessment;
 import dev.syolab.claims.rules.ClaimDraft;
 import dev.syolab.claims.rules.ClaimRuleEngine;
+import dev.syolab.claims.store.ActivityLog;
 import dev.syolab.claims.store.ClaimRepository;
 import dev.syolab.claims.store.PolicyRepository;
+import dev.syolab.claims.web.CommentRequest;
 import dev.syolab.claims.web.CreateClaimRequest;
+import dev.syolab.claims.web.DecisionRequest;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
@@ -26,13 +34,19 @@ public class ClaimService {
 
   private final ClaimRepository claims;
   private final PolicyRepository policies;
+  private final ActivityLog activity;
   private final ClaimRuleEngine engine;
   private final Clock clock;
 
   public ClaimService(
-      ClaimRepository claims, PolicyRepository policies, ClaimRuleEngine engine, Clock clock) {
+      ClaimRepository claims,
+      PolicyRepository policies,
+      ActivityLog activity,
+      ClaimRuleEngine engine,
+      Clock clock) {
     this.claims = claims;
     this.policies = policies;
+    this.activity = activity;
     this.engine = engine;
     this.clock = clock;
   }
@@ -99,15 +113,96 @@ public class ClaimService {
     return claimedAmount.min(available).multiply(coveredShare).setScale(2, RoundingMode.DOWN);
   }
 
-  public Claim get(Caller caller, UUID id) {
+  public ClaimFile get(Caller caller, UUID id) {
+    Claim claim = visibleClaim(caller, id);
+    return new ClaimFile(claim, activity.history(id));
+  }
+
+  public List<ClaimFile> listNewestFirst(Caller caller) {
+    return claims.findAllNewestFirst().stream()
+        .filter(claim -> visible(caller, claim))
+        .map(claim -> new ClaimFile(claim, activity.history(claim.id())))
+        .toList();
+  }
+
+  public List<Comment> comments(Caller caller, UUID id) {
+    visibleClaim(caller, id);
+    return activity.comments(id);
+  }
+
+  public Comment comment(Caller caller, UUID id, CommentRequest request) {
+    String body = requiredCommentBody(request);
+    visibleClaim(caller, id);
+    synchronized (activity) {
+      Comment comment =
+          new Comment(
+              UUID.randomUUID(), id, Instant.now(clock), caller.username(), caller.role(), body);
+      activity.append(comment);
+      return comment;
+    }
+  }
+
+  public List<Activity> audit() {
+    return activity.all();
+  }
+
+  private static String requiredCommentBody(CommentRequest request) {
+    if (request.body() == null || request.body().isBlank()) {
+      throw new BadRequestException("Comment cannot be empty.");
+    }
+    return request.body().trim();
+  }
+
+  public ClaimFile decide(Caller caller, UUID id, DecisionRequest request) {
+    Decision to = requestedDecision(request);
+    String note = requiredNote(request, to);
+    Claim claim = visibleClaim(caller, id);
+    synchronized (activity) {
+      Decision from = Decision.current(activity.history(id));
+      if (from.isFinal()) {
+        throw new ConflictException("This claim already has a final decision.");
+      }
+      activity.append(
+          new DecisionChange(
+              id, Instant.now(clock), caller.username(), caller.role(), from, to, note));
+      return new ClaimFile(claim, activity.history(id));
+    }
+  }
+
+  private static Decision requestedDecision(DecisionRequest request) {
+    if (request.decision() == null) {
+      throw new BadRequestException("Decision must be APPROVED, DENIED, or INFO_REQUESTED.");
+    }
+    try {
+      Decision parsed = Decision.valueOf(request.decision());
+      if (parsed == Decision.PENDING) {
+        throw new BadRequestException("Decision must be APPROVED, DENIED, or INFO_REQUESTED.");
+      }
+      return parsed;
+    } catch (IllegalArgumentException exception) {
+      throw new BadRequestException("Decision must be APPROVED, DENIED, or INFO_REQUESTED.");
+    }
+  }
+
+  private static String requiredNote(DecisionRequest request, Decision to) {
+    if (to.needsNote()) {
+      if (request.note() == null || request.note().isBlank()) {
+        throw new BadRequestException(
+            "A note is required to deny a claim or request more information.");
+      }
+      return request.note().trim();
+    }
+    if (request.note() == null || request.note().isBlank()) {
+      return null;
+    }
+    return request.note().trim();
+  }
+
+  private Claim visibleClaim(Caller caller, UUID id) {
     return claims
         .findById(id)
         .filter(claim -> visible(caller, claim))
         .orElseThrow(() -> new NotFoundException("Claim not found."));
-  }
-
-  public List<Claim> listNewestFirst(Caller caller) {
-    return claims.findAllNewestFirst().stream().filter(claim -> visible(caller, claim)).toList();
   }
 
   private boolean visible(Caller caller, Claim claim) {

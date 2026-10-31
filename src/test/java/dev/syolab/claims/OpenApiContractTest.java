@@ -19,5 +19,9 @@ class OpenApiContractTest {
     assertThat(contract).contains("operationId: getClaim");
     assertThat(contract).contains("operationId: login");
     assertThat(contract).contains("operationId: getCurrentUser");
+    assertThat(contract).contains("operationId: decideClaim");
+    assertThat(contract).contains("operationId: listComments");
+    assertThat(contract).contains("operationId: createComment");
+    assertThat(contract).contains("operationId: listAudit");
   }
 }
